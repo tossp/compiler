@@ -6,9 +6,9 @@ on:
   push:
     paths:
       - '/.github/workflows/mirror.yml'
-# 定时调度
-  schedule:
-    - cron: "30 5 * * 5"
+  # 定时调度
+  # schedule:
+  #   - cron: "30 5 * * 5"
 
   # Allows you to run this workflow manually from the Actions tab
 # 可以手动触发
@@ -32,12 +32,6 @@ jobs:
          - user: dreamacro
            name: clash-premium           
            version: latest
-         - user: photoprism
-           name: photoprism
-           version: latest
-         - user: photoprism
-           name: photoprism
-           version: preview
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -51,7 +45,7 @@ jobs:
         uses: docker/setup-buildx-action@v1
       - name: 查看可用平台
         run: echo ${{ steps.buildx.outputs.platforms }}
-      - name: 登录阿里云容器
+      - name: 登录天坑容器
         uses: docker/login-action@v1
         with:
           registry: registry.tossp.com
