@@ -1,4 +1,4 @@
-name: hs-derp 构建
+name: 镜像构建
 on:
   # 任意推送都会触发构建
   push:
@@ -43,7 +43,7 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-      - name: 构建并推送
+      - name: 构建 hs-derp
         uses: docker/build-push-action@v3
         with:
           context: ./compose/hs-derp
@@ -53,6 +53,16 @@ jobs:
           tags: |
             tossp/hs-derp:latest
             tossp/hs-derp:${{ steps.date.outputs.today }}
+      - name: 构建 jellyfin
+        uses: docker/build-push-action@v3
+        with:
+          context: ./compose/jellyfin
+          file: ./compose/jellyfin/dockerfile
+          platforms: linux/amd64
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: |
+            tossp/jellyfin:latest
+            tossp/jellyfin:${{ steps.date.outputs.today }}
       - name: 删除旧的工作流
         uses: GitRML/delete-workflow-runs@main
         with:
