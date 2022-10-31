@@ -1,43 +1,39 @@
-FROM jellyfin/jellyfin
+# FROM jellyfin/jellyfin
+FROM nyanmisaka/jellyfin
 
 LABEL maintainer="TossPig <docker@TossP.com>" \
-      version="1.0.0" \
+      version="1.0.1" \
       description="jellyfin 服务"
 
 ENV TIMEZONE Asia/Shanghai
 
-# environment settings
-ARG DEBIAN_FRONTEND="noninteractive"
-
-# https://repo.jellyfin.org/releases/server/debian/unstable/
-# docker run --rm -it --device /dev/dri/renderD128:/dev/dri/renderD128  --entrypoint /bin/bash 
-# docker run --rm -it --device /dev/dri/renderD128:/dev/dri/renderD128 tossp/jellyfin
+# https://repo.jellyfin.org/releases/server/debian/stable/ 
+# docker run --rm -it --device /dev/dri/renderD128:/dev/dri/renderD128 --entrypoint /bin/bash tossp/jellyfin
+# /usr/lib/jellyfin-ffmpeg/vainfo
 
 # Install dependencies:
 # mesa-va-drivers: needed for AMD VAAPI. Mesa >= 20.1 is required for HEVC transcoding.
 # curl: healthcheck
 RUN apt-get update \
- && apt-get install --no-install-recommends --no-install-suggests -y ca-certificates gnupg wget apt-transport-https curl \
- && wget -nv -O - https://repo.jellyfin.org/jellyfin_team.gpg.key | apt-key add - \
- && echo "deb [arch=$( dpkg --print-architecture )] https://repo.jellyfin.org/$( awk -F'=' '/^ID=/{ print $NF }' /etc/os-release ) $( awk -F'=' '/^VERSION_CODENAME=/{ print $NF }' /etc/os-release ) main" | tee /etc/apt/sources.list.d/jellyfin.list \
- && apt-get update \
- && apt-get install --no-install-recommends --no-install-suggests -y \
-   openssl  locales \
- && ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime && \
-  echo "Asia/Shanghai" > /etc/timezone && \
-  dpkg-reconfigure -f noninteractive tzdata && \
-  sed -i -e 's/# en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen && \
-  sed -i -e 's/# zh_CN.UTF-8 UTF-8/zh_CN.UTF-8 UTF-8/' /etc/locale.gen && \
-  echo 'LANG="zh_CN.UTF-8"'>/etc/default/locale && \
-  dpkg-reconfigure --frontend=noninteractive locales && \
-  update-locale LANG=zh_CN.UTF-8 LANGUAGE='zh_CN:zh:en_US:en' \
- && apt install -y fontconfig fonts-noto-cjk fonts-noto-cjk-extra \
- && apt-get remove gnupg wget apt-transport-https -y \
- && apt-get clean autoclean -y \
- && apt-get autoremove -y \
- && rm -rf /tmp/* /var/lib/apt/lists/* /var/tmp/* \
- && mkdir -p /cache /config /media \
- && chmod 777 /cache /config /media \
- && sed -ie 's/# zh_CN.UTF-8 UTF-8/zh_CN.UTF-8 UTF-8/g' /etc/locale.gen && fc-cache -vf && fc-list && \
- rm -rf /tmp/* /var/lib/apt/lists/* /var/tmp/*
- 
+      && apt-get install --no-install-recommends --no-install-suggests -y ca-certificates gnupg wget apt-transport-https curl \
+      && apt-get update \
+      && apt-get install --no-install-recommends --no-install-suggests -y \
+      openssl \
+      locales \
+      && ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime \
+      && echo "Asia/Shanghai" > /etc/timezone \
+      && dpkg-reconfigure -f noninteractive tzdata \
+      && sed -ie 's/# en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen \
+      && sed -ie 's/# zh_CN.UTF-8 UTF-8/zh_CN.UTF-8 UTF-8/' /etc/locale.gen \
+      && echo 'LANG="zh_CN.UTF-8"'>/etc/default/locale \
+      && dpkg-reconfigure --frontend=noninteractive locales \
+      && update-locale LANG=zh_CN.UTF-8 LANGUAGE='zh_CN:zh:en_US:en' \
+      && apt install -y fontconfig fonts-noto-cjk fonts-noto-cjk-extra \
+      && apt-get remove gnupg wget apt-transport-https -y \
+      && apt-get clean autoclean -y \
+      && apt-get autoremove -y \
+      && rm -rf /tmp/* /var/lib/apt/lists/* /var/tmp/* \
+      && mkdir -p /cache /config /media \
+      && chmod 777 /cache /config /media \
+      && sed -ie 's/# zh_CN.UTF-8 UTF-8/zh_CN.UTF-8 UTF-8/g' /etc/locale.gen && fc-cache -vf && fc-list && \
+      rm -rf /tmp/* /var/lib/apt/lists/* /var/tmp/*
