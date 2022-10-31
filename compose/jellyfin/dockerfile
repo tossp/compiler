@@ -10,15 +10,23 @@ ENV TIMEZONE Asia/Shanghai
 # docker run --rm -it --device /dev/dri/renderD128:/dev/dri/renderD128 --entrypoint /bin/bash tossp/jellyfin
 # /usr/lib/jellyfin-ffmpeg/vainfo
 
+# For Gen 8+, use intel-media-va-driver/intel-media-va-driver-non-free.
+# For older one, use i965-va-driver/i965-va-driver-shaders
+# apt-get install -y i965-va-driver-shaders
+
 # Install dependencies:
 # mesa-va-drivers: needed for AMD VAAPI. Mesa >= 20.1 is required for HEVC transcoding.
 # curl: healthcheck
-RUN apt-get update \
+RUN echo 'deb http://deb.debian.org/debian testing main non-free' >> /etc/apt/sources.list && apt-get update \
       && apt-get install --no-install-recommends --no-install-suggests -y ca-certificates gnupg wget apt-transport-https curl \
       && apt-get update \
       && apt-get install --no-install-recommends --no-install-suggests -y \
       openssl \
       locales \
+      # For Gen 8+
+      # intel-media-va-driver-non-free  \ 
+      # For older one
+      # i965-va-driver-shaders \
       && ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime \
       && echo "Asia/Shanghai" > /etc/timezone \
       && dpkg-reconfigure -f noninteractive tzdata \
@@ -34,5 +42,6 @@ RUN apt-get update \
       && rm -rf /tmp/* /var/lib/apt/lists/* /var/tmp/* \
       && mkdir -p /cache /config /media \
       && chmod 777 /cache /config /media \
-      && sed -ie 's/# zh_CN.UTF-8 UTF-8/zh_CN.UTF-8 UTF-8/g' /etc/locale.gen && fc-cache -vf && fc-list && \
-      rm -rf /tmp/* /var/lib/apt/lists/* /var/tmp/*
+      && sed -ie 's/# zh_CN.UTF-8 UTF-8/zh_CN.UTF-8 UTF-8/g' /etc/locale.gen && fc-cache -vf && fc-list \
+      && rm -rf /tmp/* /var/lib/apt/lists/* /var/tmp/* \
+      && sed -i 's#deb.debian.org#mirrors.cloud.tencent.com#g' /etc/apt/sources.list
