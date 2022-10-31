@@ -1,5 +1,4 @@
-# FROM jellyfin/jellyfin
-FROM nyanmisaka/jellyfin
+FROM jellyfin/jellyfin
 
 LABEL maintainer="TossPig <docker@TossP.com>" \
       version="1.0.1" \
@@ -28,7 +27,7 @@ RUN apt-get update \
       && echo 'LANG="zh_CN.UTF-8"'>/etc/default/locale \
       && dpkg-reconfigure --frontend=noninteractive locales \
       && update-locale LANG=zh_CN.UTF-8 LANGUAGE='zh_CN:zh:en_US:en' \
-      && apt install -y fontconfig fonts-noto-cjk fonts-noto-cjk-extra \
+      && apt-get install -y fontconfig fonts-noto-cjk fonts-noto-cjk-extra \
       && apt-get remove gnupg wget apt-transport-https -y \
       && apt-get clean autoclean -y \
       && apt-get autoremove -y \
