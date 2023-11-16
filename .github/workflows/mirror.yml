@@ -34,7 +34,7 @@ jobs:
            version: latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
       - name: Get current date
         id: date
         run: echo "::set-output name=today::$(date +'%Y%m%d')"
@@ -57,7 +57,7 @@ jobs:
           docker tag ${{matrix.user}}/${{matrix.name}}:${{matrix.version}} registry.tossp.com/ts/compiler/${{matrix.name}}:${{matrix.version}}
           # docker push tsds.tossp.com:2087/mirror/${{matrix.name}}:${{matrix.version}}
       - name: 删除旧的工作流
-        uses: GitRML/delete-workflow-runs@main
+        uses: Mattraks/delete-workflow-runs@main
         with:
           retain_days: 1
           keep_minimum_runs: 3
