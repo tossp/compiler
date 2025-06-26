@@ -56,11 +56,15 @@ jobs:
           for plugin in $PLUGINS; do
             PLUGIN_FLAGS="$PLUGIN_FLAGS --with $plugin"
           done
-
-          export XCADDY_GO_BUILD_FLAGS="-ldflags='-w -s'"
           CGO_ENABLED=0 GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} xcaddy build \
             --output "${{ steps.prep.outputs.outname }}" \
             $PLUGIN_FLAGS
+
+      - name: Install upx
+        run: sudo apt-get update && sudo apt-get install -y upx
+
+      - name: UPX Compress
+        run: upx --best --lzma "${{ steps.prep.outputs.outname }}" || true
 
       - name: Archive
         run: |
