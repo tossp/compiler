@@ -1,0 +1,77 @@
+name: Build & Release Custom Caddy
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 0 1 * *' # 每月1日 0点（UTC）自动触发
+
+env:
+  PLUGINS: |
+    github.com/ueffel/caddy-brotli
+    github.com/lindenlab/caddy-s3-proxy
+    github.com/sagikazarmark/caddy-fs-s3
+    github.com/caddy-dns/cloudflare
+    github.com/greenpau/caddy-security
+    github.com/RussellLuo/caddy-ext/ratelimit
+    github.com/caddyserver/replace-response
+    github.com/WeidiDeng/caddy-cloudflare-ip
+    github.com/caddy-dns/dnspod
+    github.com/mholt/caddy-dynamicdns
+
+jobs:
+  build:
+    name: Build Caddy (multi-platform)
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        goos: [linux, windows, darwin]
+        goarch: [amd64, arm64]
+        exclude:
+          - goos: windows
+            goarch: arm64
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+
+      - name: Install xcaddy
+        run: go install github.com/caddyserver/xcaddy/cmd/xcaddy@latest
+
+      - name: Prepare build arguments
+        id: prep
+        run: |
+          OUTNAME="caddy-${{ matrix.goos }}-${{ matrix.goarch }}"
+          [[ "${{ matrix.goos }}" == "windows" ]] && OUTNAME="${OUTNAME}.exe"
+          echo "outname=$OUTNAME" >> $GITHUB_OUTPUT
+          FLAGS="-ldflags='-w -s'"
+          echo "buildflags=$FLAGS" >> $GITHUB_OUTPUT
+
+      - name: Build Caddy Binary
+        run: |
+          PLUGIN_FLAGS=""
+          for plugin in $PLUGINS; do
+            PLUGIN_FLAGS="$PLUGIN_FLAGS --with $plugin"
+          done
+
+          export XCADDY_GO_BUILD_FLAGS="${{ steps.prep.outputs.buildflags }}"
+          GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} xcaddy build \
+            --output "${{ steps.prep.outputs.outname }}" \
+            $PLUGIN_FLAGS
+
+      - name: Archive
+        run: |
+          tar czvf ${{ steps.prep.outputs.outname }}.tar.gz ${{ steps.prep.outputs.outname }}
+
+      - name: Release (create or update)
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: "auto-release"
+          name: "Automated Monthly/Manual Caddy Release"
+          files: ${{ steps.prep.outputs.outname }}.tar.gz
+          prerelease: true
+          generate_release_notes: true
