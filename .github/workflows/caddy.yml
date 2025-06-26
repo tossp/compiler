@@ -1,4 +1,4 @@
-name: Build & Release Custom Caddy
+name: 构建 Caddy
 
 on:
   workflow_dispatch:
@@ -48,8 +48,6 @@ jobs:
           OUTNAME="caddy-${{ matrix.goos }}-${{ matrix.goarch }}"
           [[ "${{ matrix.goos }}" == "windows" ]] && OUTNAME="${OUTNAME}.exe"
           echo "outname=$OUTNAME" >> $GITHUB_OUTPUT
-          FLAGS="-ldflags='-w -s'"
-          echo "buildflags=$FLAGS" >> $GITHUB_OUTPUT
 
       - name: Build Caddy Binary
         run: |
@@ -58,9 +56,9 @@ jobs:
             PLUGIN_FLAGS="$PLUGIN_FLAGS --with $plugin"
           done
 
-          export XCADDY_GO_BUILD_FLAGS="${{ steps.prep.outputs.buildflags }}"
-          GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} xcaddy build \
+          CGO_ENABLED=0 GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} xcaddy build \
             --output "${{ steps.prep.outputs.outname }}" \
+            --go-build "ldflags=-w -s" \
             $PLUGIN_FLAGS
 
       - name: Archive
