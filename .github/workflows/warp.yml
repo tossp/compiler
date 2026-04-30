@@ -1,0 +1,89 @@
+name: 构建 Warp
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/warp.yml'
+      - 'app/warp/**'
+
+jobs:
+  windows-oss-smoke:
+    name: Warp Windows OSS 构建验证
+    runs-on: windows-latest
+    timeout-minutes: 60
+    env:
+      CARGO_TERM_COLOR: always
+
+    steps:
+      - name: Checkout compiler repo
+        uses: actions/checkout@v4
+
+      - name: Checkout Warp source
+        uses: actions/checkout@v4
+        with:
+          repository: warpdotdev/warp
+          path: warp-src
+
+      - name: Set up Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: 1.92.0
+          components: rustfmt,clippy
+
+      - name: Set up git for Windows
+        shell: bash
+        run: git config --system core.longpaths true
+
+      - name: Cache Rust dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: warp-src
+
+      - name: Install cargo-binstall
+        uses: cargo-bins/cargo-binstall@v1.18.1
+        env:
+          BINSTALL_VERSION: 1.14.4
+
+      - name: Install Warp build dependencies
+        shell: pwsh
+        working-directory: warp-src
+        run: ./script/windows/install_build_deps.ps1
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.9.0'
+
+      - name: Enable Corepack
+        shell: bash
+        run: corepack enable
+
+      - name: Install protoc
+        id: install_protoc
+        continue-on-error: true
+        uses: ConorMacBride/install-package@v1
+        with:
+          choco: protoc
+
+      - name: Install protoc via winget fallback
+        if: steps.install_protoc.outcome == 'failure'
+        shell: pwsh
+        run: winget install Google.Protobuf
+
+      - name: Ensure cargo.lock is up-to-date
+        shell: bash
+        working-directory: warp-src
+        run: cargo metadata --locked --format-version=1 > NUL
+
+      - name: Build Windows OSS binary
+        id: build_binary
+        shell: bash
+        working-directory: warp-src
+        run: script/bundle -Channel oss -skip_build_installer --arch x64
+
+      - name: Upload Warp Windows binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: warp-windows-oss-x64
+          path: ${{ steps.build_binary.outputs.binary_path }}
