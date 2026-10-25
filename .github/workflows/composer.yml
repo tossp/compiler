@@ -53,16 +53,6 @@ jobs:
           tags: |
             tossp/hs-derp:latest
             tossp/hs-derp:${{ steps.prepare.outputs.today }}
-      - name: 构建 jellyfin
-        uses: docker/build-push-action@v5
-        with:
-          context: ./compose/jellyfin
-          file: ./compose/jellyfin/dockerfile
-          platforms: linux/amd64
-          push: ${{ github.event_name != 'pull_request' }}
-          tags: |
-            tossp/jellyfin:latest
-            tossp/jellyfin:${{ steps.prepare.outputs.today }}
       - name: 删除旧的工作流
         uses: Mattraks/delete-workflow-runs@main
         with:
