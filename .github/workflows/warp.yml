@@ -1,4 +1,4 @@
-name: 构建 Warp
+name: 验证 Warp Windows 构建
 
 on:
   workflow_dispatch:
@@ -9,81 +9,84 @@ on:
 
 jobs:
   windows-oss-smoke:
-    name: Warp Windows OSS 构建验证
+    name: 构建 Warp 开源 Windows 版
     runs-on: windows-latest
     timeout-minutes: 60
     env:
       CARGO_TERM_COLOR: always
 
     steps:
-      - name: Checkout compiler repo
-        uses: actions/checkout@v4
+      - name: 检出构建仓库
+        uses: actions/checkout@v7
 
-      - name: Checkout Warp source
-        uses: actions/checkout@v4
+      - name: 检出 Warp 源码
+        uses: actions/checkout@v7
         with:
           repository: warpdotdev/warp
           path: warp-src
 
-      - name: Set up Rust toolchain
+      - name: 配置 Rust 工具链
         uses: dtolnay/rust-toolchain@stable
         with:
           toolchain: 1.92.0
           components: rustfmt,clippy
 
-      - name: Set up git for Windows
+      - name: 启用 Git 长路径支持
         shell: bash
         run: git config --system core.longpaths true
 
-      - name: Cache Rust dependencies
+      - name: 缓存 Rust 构建依赖
         uses: Swatinem/rust-cache@v2
         with:
           workspaces: warp-src
 
-      - name: Install cargo-binstall
+      - name: 安装 cargo-binstall
         uses: cargo-bins/cargo-binstall@v1.18.1
         env:
           BINSTALL_VERSION: 1.14.4
 
-      - name: Install Warp build dependencies
+      - name: 安装 Warp 编译依赖
         shell: pwsh
         working-directory: warp-src
         run: ./script/windows/install_build_deps.ps1
 
-      - name: Set up Node
-        uses: actions/setup-node@v4
+      - name: 配置 Node.js 构建环境
+        uses: actions/setup-node@v7
         with:
-          node-version: '20.9.0'
+          node-version: 'lts/*'
+          check-latest: true
 
-      - name: Enable Corepack
+      - name: 安装并启用 Corepack
         shell: bash
-        run: corepack enable
+        run: |
+          npm install --global corepack
+          corepack enable
 
-      - name: Install protoc
+      - name: 通过 Chocolatey 安装 protoc
         id: install_protoc
         continue-on-error: true
         uses: ConorMacBride/install-package@v1
         with:
           choco: protoc
 
-      - name: Install protoc via winget fallback
+      - name: 通过 winget 补装 protoc
         if: steps.install_protoc.outcome == 'failure'
         shell: pwsh
         run: winget install Google.Protobuf
 
-      - name: Ensure cargo.lock is up-to-date
+      - name: 校验 Cargo.lock 与依赖声明一致
         shell: bash
         working-directory: warp-src
         run: cargo metadata --locked --format-version=1 > NUL
 
-      - name: Build Windows OSS binary
+      - name: 编译 Warp 开源 Windows 版
         id: build_binary
         shell: bash
         working-directory: warp-src
         run: script/bundle -Channel oss -skip_build_installer --arch x64
 
-      - name: Upload Warp Windows binary
-        uses: actions/upload-artifact@v4
+      - name: 上传 Warp Windows 可执行文件
+        uses: actions/upload-artifact@v7
         with:
           name: warp-windows-oss-x64
           path: ${{ steps.build_binary.outputs.binary_path }}

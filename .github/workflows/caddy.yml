@@ -1,4 +1,4 @@
-name: 构建 Caddy
+name: 构建并发布 Caddy
 
 on:
   workflow_dispatch:
@@ -17,12 +17,13 @@ env:
     github.com/greenpau/caddy-security
     github.com/RussellLuo/caddy-ext/ratelimit
     github.com/caddyserver/replace-response
+    github.com/caddyserver/transform-encoder
     github.com/WeidiDeng/caddy-cloudflare-ip
     github.com/mholt/caddy-dynamicdns
 
 jobs:
   build:
-    name: Build Caddy (multi-platform)
+    name: 编译 Caddy（${{ matrix.goos }}/${{ matrix.goarch }}）
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -33,23 +34,23 @@ jobs:
             goarch: arm64
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - name: 检出构建仓库
+        uses: actions/checkout@v7
 
-      - name: Set up Go
-        uses: actions/setup-go@v5
+      - name: 配置 Go 编译环境
+        uses: actions/setup-go@v7
 
-      - name: Install xcaddy
+      - name: 安装 xcaddy 构建工具
         run: go install github.com/caddyserver/xcaddy/cmd/xcaddy@latest
 
-      - name: Prepare build arguments
+      - name: 确定产物文件名
         id: prep
         run: |
           OUTNAME="caddy-${{ matrix.goos }}-${{ matrix.goarch }}"
           [[ "${{ matrix.goos }}" == "windows" ]] && OUTNAME="${OUTNAME}.exe"
           echo "outname=$OUTNAME" >> $GITHUB_OUTPUT
 
-      - name: Build Caddy Binary
+      - name: 编译含插件的 Caddy
         run: |
           PLUGIN_FLAGS=""
           for plugin in $PLUGINS; do
@@ -59,21 +60,21 @@ jobs:
             --output "${{ steps.prep.outputs.outname }}" \
             $PLUGIN_FLAGS
 
-      - name: Install upx
+      - name: 安装 UPX 压缩工具
         run: sudo apt-get update && sudo apt-get install -y upx
 
-      - name: UPX Compress
+      - name: 压缩 Caddy 可执行文件
         run: upx --best --lzma "${{ steps.prep.outputs.outname }}" || true
 
-      - name: Archive
+      - name: 打包 Caddy 构建产物
         run: |
           tar czvf ${{ steps.prep.outputs.outname }}.tar.gz ${{ steps.prep.outputs.outname }}
 
-      - name: Release (create or update)
-        uses: softprops/action-gh-release@v2
+      - name: 发布或更新 Caddy 预发布版本
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: "auto-release"
-          name: "Automated Monthly/Manual Caddy Release"
+          name: "Caddy 自动构建预发布版"
           files: ${{ steps.prep.outputs.outname }}.tar.gz
           prerelease: true
           generate_release_notes: true
