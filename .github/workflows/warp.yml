@@ -59,6 +59,7 @@ jobs:
       - name: 安装并启用 Corepack
         shell: bash
         run: |
+          npm uninstall --global yarn pnpm
           npm install --global corepack
           corepack enable
 
